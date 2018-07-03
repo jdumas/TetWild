@@ -47,6 +47,15 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 # Export compile flags (used for autocompletion of the C++ code)
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
+if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+    set(BUILD_SHARED_LIBS OFF)
+    foreach(config ${CMAKE_CONFIGURATION_TYPES})
+        string(TOUPPER ${config} config)
+        string(REPLACE /MD /MT CMAKE_C_FLAGS_${config} "${CMAKE_C_FLAGS_${config}}")
+        string(REPLACE /MD /MT CMAKE_CXX_FLAGS_${config} "${CMAKE_CXX_FLAGS_${config}}")
+    endforeach()
+endif()
+
 ################################################################################
 # 3rd party libraries
 ################################################################################
