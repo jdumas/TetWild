@@ -49,11 +49,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     set(BUILD_SHARED_LIBS OFF)
-    foreach(config ${CMAKE_CONFIGURATION_TYPES})
-        string(TOUPPER ${config} config)
-        string(REPLACE /MD /MT CMAKE_C_FLAGS_${config} "${CMAKE_C_FLAGS_${config}}")
-        string(REPLACE /MD /MT CMAKE_CXX_FLAGS_${config} "${CMAKE_CXX_FLAGS_${config}}")
-    endforeach()
+	set(VORPALINE_ARCH_64 TRUE CACHE BOOL "" FORCE)
+	set(VORPALINE_PLATFORM Win-vs-generic CACHE STRING "" FORCE)
 endif()
 
 ################################################################################
@@ -80,10 +77,6 @@ endif(GTET_ISPC)
 ################################################################################
 # TetWild
 ################################################################################
-include_directories(include)
-# For PyMesh (change?)
-include_directories(pymesh)
-
 set(SOURCE_FILES
     src/Preprocess.h
 	src/Preprocess.cpp
@@ -125,7 +118,7 @@ set(SOURCE_FILES
 # Build static library for executable
 add_library(libTetWild STATIC ${SOURCE_FILES} ${OBJ_FILES})
 target_link_libraries(libTetWild geogram igl::core igl::cgal)
-target_include_directories(libTetWild SYSTEM PUBLIC ${EIGEN_INCLUDE_DIRS})
+target_include_directories(libTetWild SYSTEM PUBLIC ${EIGEN_INCLUDE_DIRS} include pymesh)
 
 # Building exectuable
 set(MAIN_FILE src/main.cpp)
