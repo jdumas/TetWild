@@ -1,16 +1,18 @@
 ################################################################################
 # TetWild CMake
 ################################################################################
-cmake_minimum_required(VERSION 3.3)
+cmake_minimum_required(VERSION 3.1)
 project(TetWild)
 
 ################################################################################
 # Options
 ################################################################################
+
 # ispc
 option(GTET_ISPC "Use ISPC" OFF)
+
 # libigl library
-option(LIBIGL_USE_STATIC_LIBRARY "Use libigl as static library" OFF)
+option(LIBIGL_USE_STATIC_LIBRARY    "Use libigl as static library" OFF)
 option(LIBIGL_WITH_ANTTWEAKBAR      "Use AntTweakBar"    OFF)
 option(LIBIGL_WITH_CGAL             "Use CGAL"           ON)
 option(LIBIGL_WITH_COMISO           "Use CoMiso"         OFF)
@@ -23,7 +25,6 @@ option(LIBIGL_WITH_PYTHON           "Use Python"         OFF)
 option(LIBIGL_WITH_TETGEN           "Use Tetgen"         OFF)
 option(LIBIGL_WITH_TRIANGLE         "Use Triangle"       OFF)
 option(LIBIGL_WITH_XML              "Use XML"            OFF)
-# gui
 option(LIBIGL_WITH_EMBREE           "Use Embree"         OFF)
 option(LIBIGL_WITH_NANOGUI          "Use Nanogui menu"   OFF)
 option(LIBIGL_WITH_OPENGL           "Use OpenGL"         OFF)
@@ -33,6 +34,7 @@ option(LIBIGL_WITH_VIEWER           "Use OpenGL viewer"  OFF)
 ################################################################################
 # Settings
 ################################################################################
+
 if(NOT CMAKE_BUILD_TYPE)
 	message(STATUS "No build type selected, default to Release")
 	set(CMAKE_BUILD_TYPE "Release")
@@ -47,17 +49,20 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 # Export compile flags (used for autocompletion of the C++ code)
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
+################################################################################
+# https://gitlab.kitware.com/cmake/community/wikis/FAQ#how-can-i-build-my-msvc-application-with-a-static-runtime
+
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-    set(BUILD_SHARED_LIBS OFF)
-	set(VORPALINE_ARCH_64 TRUE CACHE BOOL "" FORCE)
-	set(VORPALINE_PLATFORM Win-vs-generic CACHE STRING "" FORCE)
+	foreach(config ${CMAKE_CONFIGURATION_TYPES})
+		string(TOUPPER ${config} config)
+		string(REPLACE /MD /MT CMAKE_C_FLAGS_${config} "${CMAKE_C_FLAGS_${config}}")
+		string(REPLACE /MD /MT CMAKE_CXX_FLAGS_${config} "${CMAKE_CXX_FLAGS_${config}}")
+	endforeach()
 endif()
 
 ################################################################################
 # 3rd party libraries
 ################################################################################
-# cgal
-find_package(CGAL REQUIRED)
 
 # libigl
 find_package(LIBIGL REQUIRED)
