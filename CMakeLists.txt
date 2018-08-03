@@ -130,5 +130,7 @@ set(MAIN_FILE src/main.cpp)
 add_executable(TetWild ${MAIN_FILE})
 target_link_libraries(TetWild libTetWild)
 
+igl_copy_cgal_dll(TetWild)
+
 # Install
 INSTALL(TARGETS TetWild RUNTIME DESTINATION bin)
