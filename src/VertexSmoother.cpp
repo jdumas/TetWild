@@ -28,18 +28,20 @@ void VertexSmoother::smooth() {
             smoothSurface();
             suc_surface = suc_counter;
         }
-
+#ifndef MUTE_COUT
         cout << (suc_in + suc_surface) / v_cnt << endl;
         if (suc_in + suc_surface < v_cnt * 0.1) {
             cout << i << endl;
             break;
         }
+#endif
     }
-
+#ifndef MUTE_COUT
     for (int i = 0; i < breakdown_timing.size(); i++) {
         cout << breakdown_name[i] << ": " << breakdown_timing[i] << "s" << endl;
         breakdown_timing[i] = 0;//reset
     }
+#endif
 }
 
 bool VertexSmoother::smoothSingleVertex(int v_id, bool is_cal_energy){
@@ -453,12 +455,14 @@ void VertexSmoother::smoothSurface() {//smoothing surface using two methods
 
         suc_counter++;
         sf_suc_counter++;
-
+#ifndef MUTE_COUT
         if (sf_suc_counter % 1000 == 0)
             cout << "1000 accepted!" << endl;
+#endif
     }
-
+#ifndef MUTE_COUT
     cout << "Totally " << sf_suc_counter << "(" << sf_counter << ")" << " vertices on surface are smoothed." << endl;
+#endif
 }
 
 bool VertexSmoother::NewtonsMethod(const std::vector<int>& t_ids, const std::vector<std::array<int, 4>>& new_tets,
@@ -545,18 +549,73 @@ double VertexSmoother::getNewEnergy(const std::vector<int>& t_ids) {
 
 #ifdef GTET_ISPC
     int n = t_ids.size();
-    double T0[n];
-    double T1[n];
-    double T2[n];
-    double T3[n];
-    double T4[n];
-    double T5[n];
-    double T6[n];
-    double T7[n];
-    double T8[n];
-    double T9[n];
-    double T10[n];
-    double T11[n];
+
+    static int current_max_size = 0;
+
+    static double* T0 = 0;
+    static double* T1 = 0;
+    static double* T2 = 0;
+    static double* T3 = 0;
+    static double* T4 = 0;
+    static double* T5 = 0;
+    static double* T6 = 0;
+    static double* T7 = 0;
+    static double* T8 = 0;
+    static double* T9 = 0;
+    static double* T10 = 0;
+    static double* T11 = 0;
+    static double* energy = 0;
+
+    if (T0 == 0) {
+        std::cerr << "Initial ISPC allocation: n = " << n << endl;
+        current_max_size = n;
+        T0 = new double[n];
+        T1 = new double[n];
+        T2 = new double[n];
+        T3 = new double[n];
+        T4 = new double[n];
+        T5 = new double[n];
+        T6 = new double[n];
+        T7 = new double[n];
+        T8 = new double[n];
+        T9 = new double[n];
+        T10 = new double[n];
+        T11 = new double[n];
+        energy = new double[n];
+    }
+
+    if (current_max_size < n) {
+        std::cerr << "ISPC reallocation: n = " << n << endl;
+        free(T0);
+        free(T1);
+        free(T2);
+        free(T3);
+        free(T4);
+        free(T5);
+        free(T6);
+        free(T7);
+        free(T8);
+        free(T9);
+        free(T10);
+        free(T11);
+        free(energy);
+
+        current_max_size = n;
+        T0 = new double[n];
+        T1 = new double[n];
+        T2 = new double[n];
+        T3 = new double[n];
+        T4 = new double[n];
+        T5 = new double[n];
+        T6 = new double[n];
+        T7 = new double[n];
+        T8 = new double[n];
+        T9 = new double[n];
+        T10 = new double[n];
+        T11 = new double[n];
+        energy = new double[n];
+    }
+
     for (int i = 0; i < n; i++) {
         T0[i] = tet_vertices[tets[t_ids[i]][0]].posf[0];
         T1[i] = tet_vertices[tets[t_ids[i]][0]].posf[1];
@@ -572,7 +631,6 @@ double VertexSmoother::getNewEnergy(const std::vector<int>& t_ids) {
         T11[i] = tet_vertices[tets[t_ids[i]][3]].posf[2];
     }
 
-    double energy[n];
     ispc::energy_ispc(T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, energy, n);
 
     for (int i = 0; i < n; i++) {
@@ -591,8 +649,10 @@ double VertexSmoother::getNewEnergy(const std::vector<int>& t_ids) {
         }
     }
 #endif
-    if (std::isinf(s_energy) || std::isnan(s_energy) || s_energy <= 0) {
+    if (std::isinf(s_energy) || std::isnan(s_energy) || s_energy <= 0 || s_energy > MAX_ENERGY) {
+#ifndef MUTE_COUT
         cout << "new E inf" << endl;
+#endif
         s_energy = MAX_ENERGY;
     }
 
@@ -652,23 +712,33 @@ bool VertexSmoother::NewtonsUpdate(const std::vector<int>& t_ids, int v_id,
 #endif
 
     if (std::isinf(energy)) {
+#ifndef MUTE_COUT
         cout << v_id << " E inf" << endl;
+#endif
         energy = MAX_ENERGY;
     }
     if (std::isnan(energy)) {
+#ifndef MUTE_COUT
         cout << v_id << " E nan" << endl;
+#endif
         return false;
     }
     if (energy <= 0) {
+#ifndef MUTE_COUT
         cout << v_id << " E < 0" << endl;
+#endif
         return false;
     }
     if (!J.allFinite()) {
+#ifndef MUTE_COUT
         cout << v_id << " J inf/nan" << endl;
+#endif
         return false;
     }
     if (!H.allFinite()) {
+#ifndef MUTE_COUT
         cout << v_id << " H inf/nan" << endl;
+#endif
         return false;
     }
 
@@ -802,7 +872,9 @@ int VertexSmoother::laplacianBoundary(const std::vector<int>& b_v_ids, const std
 //        }
     }
 
+#ifndef MUTE_COUT
     cout<<"suc.size = "<<cnt_suc<<endl;
+#endif
     return cnt_suc;
 }
 

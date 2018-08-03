@@ -1,16 +1,15 @@
 ################################################################################
 # TetWild CMake
 ################################################################################
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.3)
 project(TetWild)
 
 ################################################################################
 # Options
 ################################################################################
-
+option(MUTE_CHECKS "Mute log and unnecassary checks" OFF)
 # ispc
-option(GTET_ISPC "Use ISPC" OFF)
-
+option(USE_ISPC "Use ISPC" OFF)
 # libigl library
 option(LIBIGL_USE_STATIC_LIBRARY    "Use libigl as static library" OFF)
 option(LIBIGL_WITH_ANTTWEAKBAR      "Use AntTweakBar"    OFF)
@@ -25,6 +24,9 @@ option(LIBIGL_WITH_PYTHON           "Use Python"         OFF)
 option(LIBIGL_WITH_TETGEN           "Use Tetgen"         OFF)
 option(LIBIGL_WITH_TRIANGLE         "Use Triangle"       OFF)
 option(LIBIGL_WITH_XML              "Use XML"            OFF)
+#geogram
+option(GEOGRAM_WITH_TRIANGLE        "Use Triangle"       OFF)
+# gui
 option(LIBIGL_WITH_EMBREE           "Use Embree"         OFF)
 option(LIBIGL_WITH_NANOGUI          "Use Nanogui menu"   OFF)
 option(LIBIGL_WITH_OPENGL           "Use OpenGL"         OFF)
@@ -49,6 +51,9 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 # Export compile flags (used for autocompletion of the C++ code)
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
+# Generate position independent code
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
 ################################################################################
 # https://gitlab.kitware.com/cmake/community/wikis/FAQ#how-can-i-build-my-msvc-application-with-a-static-runtime
 
@@ -72,11 +77,12 @@ include(geogram)
 
 # ispc
 SET(OBJ_FILES "")
-if(GTET_ISPC)
+if(USE_ISPC)
 	add_custom_command(OUTPUT energy_ispc.o
-			COMMAND ispc ${CMAKE_SOURCE_DIR}/ispc/energy.ispc -h ${CMAKE_SOURCE_DIR}/ispc/energy.h -o energy_ispc.o DEPENDS ${CMAKE_SOURCE_DIR}/ispc/energy.ispc)
+			COMMAND ispc -g ${CMAKE_SOURCE_DIR}/ispc/energy.ispc -h ${CMAKE_SOURCE_DIR}/ispc/energy.h -o energy_ispc.o DEPENDS ${CMAKE_SOURCE_DIR}/ispc/energy.ispc)
 	add_definitions(-DGTET_ISPC)
     LIST(APPEND OBJ_FILES energy_ispc.o)
+<<<<<<< HEAD
 endif(GTET_ISPC)
 
 ################################################################################
@@ -131,6 +137,68 @@ add_executable(TetWild ${MAIN_FILE})
 target_link_libraries(TetWild libTetWild)
 
 igl_copy_cgal_dll(TetWild)
+=======
+endif(USE_ISPC)
+
+#cout
+if(MUTE_CHECKS)
+	add_definitions(-DMUTE_COUT)
+endif(MUTE_CHECKS)
+
+################################################################################
+# TetWild
+################################################################################
+set(SOURCE_FILES
+    src/Preprocess.h
+	src/Preprocess.cpp
+	src/DelaunayTetrahedralization.h
+	src/DelaunayTetrahedralization.cpp
+	src/MeshConformer.h
+	src/MeshConformer.cpp
+	src/BSPSubdivision.h
+	src/BSPSubdivision.cpp
+	src/SimpleTetrahedralization.h
+	src/SimpleTetrahedralization.cpp
+	src/MeshRefinement.h
+	src/MeshRefinement.cpp
+	src/LocalOperations.h
+	src/LocalOperations.cpp
+	src/EdgeSplitter.h
+	src/EdgeSplitter.cpp
+	src/EdgeCollapser.h
+	src/EdgeCollapser.cpp
+	src/EdgeRemover.h
+	src/EdgeRemover.cpp
+	src/VertexSmoother.h
+	src/VertexSmoother.cpp
+	src/InoutFiltering.h
+	src/InoutFiltering.cpp
+	src/heads.h
+	src/heads.cpp
+	src/tetwild.cpp
+	src/CLI11.hpp
+	src/TetmeshElements.h
+	# PyMesh
+	pymesh/MshLoader.h
+	pymesh/MshLoader.cpp
+	pymesh/MshSaver.h
+	pymesh/MshSaver.cpp
+	pymesh/Exception.h
+    )
+
+# Build static library for executable
+add_library(libTetWild STATIC ${SOURCE_FILES} ${OBJ_FILES})
+target_link_libraries(libTetWild geogram igl::core igl::cgal)
+target_include_directories(libTetWild SYSTEM PUBLIC ${EIGEN_INCLUDE_DIRS} include pymesh)
+set_target_properties(libTetWild PROPERTIES OUTPUT_NAME "tetwild")
+
+# Building exectuable
+set(MAIN_FILE src/main.cpp)
+add_executable(TetWild ${MAIN_FILE})
+target_link_libraries(TetWild libTetWild)
+
+igl_copy_cgal_dll(TetWild)
+>>>>>>> upstream/master
 
 # Install
 INSTALL(TARGETS TetWild RUNTIME DESTINATION bin)

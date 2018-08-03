@@ -306,14 +306,14 @@ void LocalOperations::check() {
             assert(tet_vertices[i].conn_tets.size()>0);
         }
 
-        for(int j=0;j<3;j++) {
-            int tmp_n_size = CGAL::exact(tet_vertices[i].pos[j]).numerator().bit_size();
-            int tmp_d_size = CGAL::exact(tet_vertices[i].pos[j]).denominator().bit_size();
-            if(tmp_n_size>n_size)
-                n_size=tmp_n_size;
-            if(tmp_d_size>d_size)
-                d_size=tmp_d_size;
-        }
+//        for(int j=0;j<3;j++) {
+//            int tmp_n_size = CGAL::exact(tet_vertices[i].pos[j]).numerator().bit_size();
+//            int tmp_d_size = CGAL::exact(tet_vertices[i].pos[j]).denominator().bit_size();
+//            if(tmp_n_size>n_size)
+//                n_size=tmp_n_size;
+//            if(tmp_d_size>d_size)
+//                d_size=tmp_d_size;
+//        }
     }
 
     for (int i = 0; i < tets.size(); i++) {
@@ -700,18 +700,73 @@ void LocalOperations::calTetQualities(const std::vector<std::array<int, 4>>& new
     tet_qs.resize(new_tets.size());
 #ifdef GTET_ISPC
     int n = new_tets.size();
-    double T0[n];
-    double T1[n];
-    double T2[n];
-    double T3[n];
-    double T4[n];
-    double T5[n];
-    double T6[n];
-    double T7[n];
-    double T8[n];
-    double T9[n];
-    double T10[n];
-    double T11[n];
+
+    static int current_max_size = 0;
+
+    static double* T0 = 0;
+    static double* T1 = 0;
+    static double* T2 = 0;
+    static double* T3 = 0;
+    static double* T4 = 0;
+    static double* T5 = 0;
+    static double* T6 = 0;
+    static double* T7 = 0;
+    static double* T8 = 0;
+    static double* T9 = 0;
+    static double* T10 = 0;
+    static double* T11 = 0;
+    static double* energy = 0;
+
+    if (T0 == 0) {
+        std::cerr << "Initial ISPC allocation: n = " << n << endl;
+        current_max_size = n;
+        T0 = new double[n];
+        T1 = new double[n];
+        T2 = new double[n];
+        T3 = new double[n];
+        T4 = new double[n];
+        T5 = new double[n];
+        T6 = new double[n];
+        T7 = new double[n];
+        T8 = new double[n];
+        T9 = new double[n];
+        T10 = new double[n];
+        T11 = new double[n];
+        energy = new double[n];
+    }
+
+    if (current_max_size < n) {
+        std::cerr << "ISPC reallocation: n = " << n << endl;
+        free(T0);
+        free(T1);
+        free(T2);
+        free(T3);
+        free(T4);
+        free(T5);
+        free(T6);
+        free(T7);
+        free(T8);
+        free(T9);
+        free(T10);
+        free(T11);
+        free(energy);
+
+        current_max_size = n;
+        T0 = new double[n];
+        T1 = new double[n];
+        T2 = new double[n];
+        T3 = new double[n];
+        T4 = new double[n];
+        T5 = new double[n];
+        T6 = new double[n];
+        T7 = new double[n];
+        T8 = new double[n];
+        T9 = new double[n];
+        T10 = new double[n];
+        T11 = new double[n];
+        energy = new double[n];
+    }
+
     for (int i = 0; i < n; i++) {
         T0[i] = tet_vertices[new_tets[i][0]].posf[0];
         T1[i] = tet_vertices[new_tets[i][0]].posf[1];
@@ -727,7 +782,6 @@ void LocalOperations::calTetQualities(const std::vector<std::array<int, 4>>& new
         T11[i] = tet_vertices[new_tets[i][3]].posf[2];
     }
 
-    double energy[n];
     ispc::energy_ispc(T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, energy, n);
 
     for (int i = 0; i < new_tets.size(); i++) {
@@ -740,7 +794,7 @@ void LocalOperations::calTetQualities(const std::vector<std::array<int, 4>>& new
             continue;
         } else
             tet_qs[i].slim_energy = energy[i];
-            
+
         if (std::isinf(energy[i]) || std::isnan(energy[i]))
             tet_qs[i].slim_energy = MAX_ENERGY;
     }
@@ -1012,7 +1066,6 @@ bool LocalOperations::isFaceOutEnvelop(const Triangle_3f& tri) {
 bool LocalOperations::isPointOutEnvelop(const Point_3f& p) {
 #if CHECK_ENVELOP
     GEO::vec3 geo_p(p[0], p[1], p[2]);
-    cnt_geo_aabb++;
     if (geo_sf_tree.squared_distance(geo_p) > g_eps_2)
         return true;
 
@@ -1054,7 +1107,6 @@ bool LocalOperations::isFaceOutEnvelop_sampling(const Triangle_3f& tri) {
         GEO::vec3 &current_point = ps[i];
         sq_dist = current_point.distance2(nearest_point);
         geo_sf_tree.nearest_facet_with_hint(current_point, prev_facet, nearest_point, sq_dist);
-        cnt_geo_aabb++;
         double dis = current_point.distance2(nearest_point);
         if (dis > g_eps_2) {
 #if TIMING_BREAKDOWN
@@ -1185,7 +1237,6 @@ bool LocalOperations::isBoundarySlide(int v1_id, int v2_id, Point_3f& old_pf){
         GEO::vec3 &current_point = b_points[i];
         sq_dist = current_point.distance2(nearest_point);
         geo_b_tree.nearest_facet_with_hint(current_point, prev_facet, nearest_point, sq_dist);
-        cnt_geo_aabb++;
         double dis = current_point.distance2(nearest_point);
         if (dis > g_eps_2) {
 #if TIMING_BREAKDOWN
@@ -1469,7 +1520,6 @@ void LocalOperations::outputSurfaceColormap(const Eigen::MatrixXd& V_in, const E
         for (const GEO::vec3 &current_point:ps) {
             sq_dist = current_point.distance2(nearest_point);
             geo_sf_tree.nearest_facet_with_hint(current_point, prev_facet, nearest_point, sq_dist);
-            cnt_geo_aabb++;
             double dis = current_point.distance2(nearest_point);
             if (dis > max_dis)
                 max_dis = dis;

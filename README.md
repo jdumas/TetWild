@@ -2,7 +2,11 @@
 # TetWild - Tetrahedral Meshing in the Wild
 ![](docs/teaser.png)
 Yixin Hu, Qingnan Zhou, Xifeng Gao, Alec Jacobson, Denis Zorin, Daniele Panozzo.
-ACM Transactions on Graphics (SIGGRAPH 2018). [paper](https://cs.nyu.edu/~yixinhu/TetWild_Final.pdf)
+ACM Transactions on Graphics (SIGGRAPH 2018). 
+
+💡💡💡 **If you are interested in the algorithm details, please refer to our [paper](https://cs.nyu.edu/~yixinhu/TetWild_Final.pdf) first. We provide plenty of examples and statistics in the paper.**
+
+💡💡💡 **If you don't have time to read the whole documentation, please always read the tips with (💡) in the front first.**
 
 <!--<img src="images/new.png" alt="drawing" style="width:25px;"/> New features-->
 
@@ -15,6 +19,8 @@ Here is pre-generated tetmeshes and the extracted surface meshes for research-pu
 [10k tetmeshes](https://drive.google.com/file/d/17AZwaQaj_nxdCIUpiGFCQ7_khNQxfG4Y/view?usp=sharing), 
 [10k surface meshes](https://drive.google.com/open?id=1E_C1uVoG1ZGF3pfDpHFKIS8Qqd2VXLZQ)
 
+- Figures in the paper: [Input/output & scripts](https://drive.google.com/file/d/1yhq2-UhMrIQBccpDsvHSfeO_NbwqgEog/view?usp=sharing)
+
 ## Installation
 
 Our code was originally developed on MacOS and has been tested on Lunix and Windows.
@@ -24,6 +30,13 @@ Our code was originally developed on MacOS and has been tested on Lunix and Wind
 ```bash
 git clone https://github.com/Yixin-Hu/TetWild --recursive
 ```
+
+- For Windows users, a patch needs to be applied to the geogram library to avoid a link error:
+
+```bash
+git apply geogram_win.patch
+```
+
 - Compile the code using cmake (default in release mode):
 
 You need to install [CGAL](https://doc.cgal.org/latest/Manual/installation.html) before compiling the code.
@@ -38,6 +51,8 @@ make
 
 💡 If you find `Could not find Matlab` or `Could not find Mosek` in the output of cmake, it does not matter since they are not used. 
 
+💡 We provide users an option to use [ISPC](https://ispc.github.io/index.html) for computing energy parallelly. It reduces the timimg for computing energy to 50% of the original, but it could result in more optimization iterations and more overall running time. According to our experiment on 1000 models, it reduces the overall running time by 4% in average. If you want to use ISPC, please [install it first](https://ispc.github.io/ispc.html#installing-ispc) and then turn on the flag `GTET_ISPC` in `CMakeLists.txt`.
+
 ## Usage
 
 #### Input/output Format
@@ -45,6 +60,8 @@ make
 The inputs of our software are triangle surface meshes in `.off/.obj/.stl/.ply` format. 
 
 We support `.mesh/.msh` format output. The default output format is `.msh` with minimum dihedral angle recorded as element scalar field, which can be visualized by software [Gmsh](http://gmsh.info/). You can use `PyMesh::MshLoader` and `PyMesh::MshSaver` in `pymesh/` for read and write `.msh` meshes.
+
+💡 TetWild also outputs the surface of tetmesh in `.obj` format if the `is_quiet` flag is not turned on.
 
 ### Features
 Our software is quite easy to use. Basically, users only need to provide a surface triangle mesh as input and our mesher would output a tetrahedral mesh by using default settings. If you want to customize your own tetmeshes, we also provide some options.
@@ -109,6 +126,8 @@ Options:
 TODO :)-->
 
 ### Function Wrapper
+
+💡 The input surface mesh reader we are using is open-sourced so it could fail or read in something wrong. If you encounter this problem, please use our function wrapper and pass the raw data directly to TetWild.
 
 We provide a wrapper for TetWild in `tetwild.h`, allowing users do the tetrahedaliztion without read/write data from/to files. One can use it in the following way:
 
