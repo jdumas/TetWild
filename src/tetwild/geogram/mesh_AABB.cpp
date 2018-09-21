@@ -78,53 +78,6 @@ namespace {
         }
     }
 
-
-    /**
-     * \brief Computes the axis-aligned bounding box of a mesh tetrahedron.
-     * \param[in] M the mesh
-     * \param[out] B the bounding box of the facet
-     * \param[in] t the index of the tetrahedron in mesh \p M
-     */
-    void get_tet_bbox(
-        const Mesh& M, Box& B, index_t t
-    ) {
-        const double* p = M.vertices.point_ptr(M.cells.vertex(t,0));
-        for(coord_index_t coord = 0; coord < 3; ++coord) {
-            B.xyz_min[coord] = p[coord];
-            B.xyz_max[coord] = p[coord];
-        }
-        for(index_t lv=1; lv<4; ++lv) {
-            p = M.vertices.point_ptr(M.cells.vertex(t,lv));
-            for(coord_index_t coord = 0; coord < 3; ++coord) {
-                B.xyz_min[coord] = std::min(B.xyz_min[coord], p[coord]);
-                B.xyz_max[coord] = std::max(B.xyz_max[coord], p[coord]);
-            }
-        }
-    }
-
-    /**
-     * \brief Computes the axis-aligned bounding box of a mesh cell
-     * \param[in] M the mesh
-     * \param[out] B the bounding box of the facet
-     * \param[in] c the index of the cell in mesh \p M
-     */
-    void get_cell_bbox(
-        const Mesh& M, Box& B, index_t c
-    ) {
-        const double* p = M.vertices.point_ptr(M.cells.vertex(c,0));
-        for(coord_index_t coord = 0; coord < 3; ++coord) {
-            B.xyz_min[coord] = p[coord];
-            B.xyz_max[coord] = p[coord];
-        }
-        for(index_t lv=1; lv<M.cells.nb_vertices(c); ++lv) {
-            p = M.vertices.point_ptr(M.cells.vertex(c,lv));
-            for(coord_index_t coord = 0; coord < 3; ++coord) {
-                B.xyz_min[coord] = std::min(B.xyz_min[coord], p[coord]);
-                B.xyz_max[coord] = std::max(B.xyz_max[coord], p[coord]);
-            }
-        }
-    }
-
     /**
      * \brief Computes the maximum node index in a subtree
      * \param[in] node_index node index of the root of the subtree
@@ -283,40 +236,6 @@ namespace {
         }
         return result;
     }
-
-    /**
-     * \brief Tests whether a mesh tetrahedron contains a given point
-     * \param[in] M a const reference to the mesh
-     * \param[in] t the index of the tetrahedron in \p M
-     * \param[in] p a const reference to the point
-     * \param[in] exact specifies whether exact predicates should be used
-     * \retval true if the tetrahedron \p t or its boundary contains
-     *  the point \p p
-     * \retval false otherwise
-     */
-    bool mesh_tet_contains_point(
-        const Mesh& M, index_t t, const vec3& p, bool exact = true
-    ) {
-        // Inexact mode is not implemented yet.
-        geo_argused(exact);
-
-        const vec3& p0 = Geom::mesh_vertex(M, M.cells.vertex(t,0));
-        const vec3& p1 = Geom::mesh_vertex(M, M.cells.vertex(t,1));
-        const vec3& p2 = Geom::mesh_vertex(M, M.cells.vertex(t,2));
-        const vec3& p3 = Geom::mesh_vertex(M, M.cells.vertex(t,3));
-
-        Sign s[4];
-        s[0] = PCK::orient_3d(p, p1, p2, p3);
-        s[1] = PCK::orient_3d(p0, p, p2, p3);
-        s[2] = PCK::orient_3d(p0, p1, p, p3);
-        s[3] = PCK::orient_3d(p0, p1, p2, p);
-
-        return (
-            (s[0] >= 0 && s[1] >= 0 && s[2] >= 0 && s[3] >= 0) ||
-            (s[0] <= 0 && s[1] <= 0 && s[2] <= 0 && s[3] <= 0)
-        );
-    }
-
 
     /**
      * \brief Tests whether a segment intersects a triangle.
@@ -596,17 +515,14 @@ namespace GEO {
         // Traverse the "nearest" child first, so that it has more chances
         // to prune the traversal of the other child.
         if(dl < dr) {
-            if(dl < sq_dist) {
+            if(dl < sq_dist && dl <= sq_epsilon) {
                 facet_in_envelope_recursive(
                     p, sq_epsilon,
                     nearest_f, nearest_point, sq_dist,
                     childl, b, m
                 );
-                if (sq_dist <= sq_epsilon) {
-                    return;
-                }
             }
-            if(dr < sq_dist) {
+            if(dr < sq_dist && dr <= sq_epsilon) {
                 facet_in_envelope_recursive(
                     p, sq_epsilon,
                     nearest_f, nearest_point, sq_dist,
@@ -614,17 +530,14 @@ namespace GEO {
                 );
             }
         } else {
-            if(dr < sq_dist) {
+            if(dr < sq_dist && dr <= sq_epsilon) {
                 facet_in_envelope_recursive(
                     p, sq_epsilon,
                     nearest_f, nearest_point, sq_dist,
                     childr, m, e
                 );
-                if (sq_dist <= sq_epsilon) {
-                    return;
-                }
             }
-            if(dl < sq_dist) {
+            if(dl < sq_dist && dl <= sq_epsilon) {
                 facet_in_envelope_recursive(
                     p, sq_epsilon,
                     nearest_f, nearest_point, sq_dist,

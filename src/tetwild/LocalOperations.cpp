@@ -1287,6 +1287,8 @@ bool LocalOperations::isIsolated(int v_id) {
 }
 
 bool LocalOperations::isBoundaryPoint(int v_id) {
+    if(state.is_mesh_closed)
+        return false;
     std::unordered_set<int> n_v_ids;
     for (int t_id:tet_vertices[v_id].conn_tets) {
         for (int j = 0; j < 4; j++)
