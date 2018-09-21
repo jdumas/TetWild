@@ -22,7 +22,6 @@
 #include <igl/unique.h>
 #include <igl/unique_simplices.h>
 #include <igl/bounding_box_diagonal.h>
-#include <geogram/mesh/mesh_AABB.h>
 #include <geogram/mesh/mesh_reorder.h>
 #include <geogram/mesh/mesh_geometry.h>
 #include <geogram/mesh/mesh_repair.h>
@@ -214,7 +213,7 @@ void Preprocess::process(GEO::Mesh& geo_sf_mesh, std::vector<Point_3>& m_vertice
     f_is_removed = std::vector<bool>(F_in.rows(), false);
 
     // mesh_reorder(geo_sf_mesh, GEO::MESH_ORDER_HILBERT);
-    GEO::MeshFacetsAABB geo_face_tree(geo_sf_mesh);
+    GEO::MeshFacetsAABBWithEps geo_face_tree(geo_sf_mesh);
 
     std::vector<std::array<int, 2>> edges;
     edges.reserve(F_in.rows()*6);
@@ -307,7 +306,7 @@ void Preprocess::process(GEO::Mesh& geo_sf_mesh, std::vector<Point_3>& m_vertice
     //    outputSurfaceColormap(geo_face_tree, geo_sf_mesh);
 }
 
-void Preprocess::swap(const GEO::Mesh &geo_mesh, const GEO::MeshFacetsAABB& face_aabb_tree) {
+void Preprocess::swap(const GEO::Mesh &geo_mesh, const GEO::MeshFacetsAABBWithEps& face_aabb_tree) {
     int cnt = 0;
     for (int i = 0; i < F_in.rows(); i++) {
         bool is_swapped = false;
@@ -411,7 +410,7 @@ double Preprocess::getCosAngle(int v_id, int v1_id, int v2_id) {
                                 GEO::vec3(V_in(v_id, 0), V_in(v_id, 1), V_in(v_id, 2)));
 }
 
-void Preprocess::simplify(const GEO::Mesh &geo_mesh, const GEO::MeshFacetsAABB& face_aabb_tree) {
+void Preprocess::simplify(const GEO::Mesh &geo_mesh, const GEO::MeshFacetsAABBWithEps& face_aabb_tree) {
     int cnt = 0;
 //    logger().debug("queue.size() = {}", sm_queue.size());
     while (!sm_queue.empty()) {
@@ -438,7 +437,7 @@ void Preprocess::simplify(const GEO::Mesh &geo_mesh, const GEO::MeshFacetsAABB& 
         postProcess(geo_mesh, face_aabb_tree);
 }
 
-void Preprocess::postProcess(const GEO::Mesh &geo_mesh, const GEO::MeshFacetsAABB& face_aabb_tree){
+void Preprocess::postProcess(const GEO::Mesh &geo_mesh, const GEO::MeshFacetsAABBWithEps& face_aabb_tree){
     logger().debug("postProcess!");
 
     std::vector<std::array<int, 2>> tmp_inf_es;
@@ -467,7 +466,7 @@ void Preprocess::postProcess(const GEO::Mesh &geo_mesh, const GEO::MeshFacetsAAB
     simplify(geo_mesh, face_aabb_tree);
 }
 
-bool Preprocess::removeAnEdge(int v1_id, int v2_id, const GEO::Mesh &geo_mesh, const GEO::MeshFacetsAABB& face_aabb_tree) {
+bool Preprocess::removeAnEdge(int v1_id, int v2_id, const GEO::Mesh &geo_mesh, const GEO::MeshFacetsAABBWithEps& face_aabb_tree) {
     if (!isOneRingClean(v1_id) || !isOneRingClean(v2_id))
         return false;
 
@@ -641,7 +640,7 @@ bool Preprocess::isOneRingClean(int v1_id){
 
 
 bool Preprocess::isOutEnvelop(const std::unordered_set<int>& new_f_ids,
-    const GEO::Mesh &geo_sf_mesh, const GEO::MeshFacetsAABB& geo_face_tree)
+    const GEO::Mesh &geo_sf_mesh, const GEO::MeshFacetsAABBWithEps& geo_face_tree)
 {
     size_t num_querried = 0;
     size_t num_tris = new_f_ids.size();
@@ -729,7 +728,8 @@ bool Preprocess::isOutEnvelop(const std::unordered_set<int>& new_f_ids,
                 get_point_facet_nearest_point(geo_sf_mesh, current_point, prev_facet, nearest_point, sq_dist);
             }
             if (sq_dist > state.eps_2) {
-                geo_face_tree.nearest_facet_with_hint(current_point, prev_facet, nearest_point, sq_dist);
+                geo_face_tree.facet_in_envelope_with_hint(
+                    current_point, state.eps_2, prev_facet, nearest_point, sq_dist);
             }
             ++num_querried;
             if (sq_dist > state.eps_2) {
@@ -745,7 +745,7 @@ bool Preprocess::isOutEnvelop(const std::unordered_set<int>& new_f_ids,
     return false;
 }
 
-bool Preprocess::isPointOutEnvelop(int v_id, const GEO::MeshFacetsAABB& geo_face_tree){
+bool Preprocess::isPointOutEnvelop(int v_id, const GEO::MeshFacetsAABBWithEps& geo_face_tree){
     if (geo_face_tree.squared_distance(GEO::vec3(V_in(v_id, 0), V_in(v_id, 1), V_in(v_id, 2))) > state.eps_2)
         return true;
     return false;
@@ -825,7 +825,7 @@ bool Preprocess::isEuclideanValid(int v1_id, int v2_id){
     return true;
 }
 
-void Preprocess::outputSurfaceColormap(const GEO::MeshFacetsAABB& geo_face_tree, const GEO::Mesh& geo_sf_mesh) {
+void Preprocess::outputSurfaceColormap(const GEO::MeshFacetsAABBWithEps& geo_face_tree, const GEO::Mesh& geo_sf_mesh) {
     Eigen::VectorXd eps_dis(F_in.rows());
     for(int f_id=0;f_id<geo_sf_mesh.facets.nb();f_id++) {
 //        if(f_id!=1871)

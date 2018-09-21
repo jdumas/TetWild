@@ -1081,7 +1081,8 @@ bool LocalOperations::isFaceOutEnvelop_sampling(const Triangle_3f& tri) {
             get_point_facet_nearest_point(geo_sf_mesh, current_point, prev_facet, nearest_point, sq_dist);
         }
         if (sq_dist > state.eps_2) {
-            geo_sf_tree.nearest_facet_with_hint(current_point, prev_facet, nearest_point, sq_dist);
+            geo_sf_tree.facet_in_envelope_with_hint(
+                current_point, state.eps_2, prev_facet, nearest_point, sq_dist);
         }
         ++num_queries;
         if (sq_dist > state.eps_2) {

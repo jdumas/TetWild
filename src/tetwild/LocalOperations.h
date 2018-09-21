@@ -14,7 +14,7 @@
 
 #include <tetwild/ForwardDecls.h>
 #include <tetwild/TetmeshElements.h>
-#include <geogram/mesh/mesh_AABB.h>
+#include <tetwild/geogram/mesh_AABB.h>
 #include <igl/grad.h>
 #include <igl/Timer.h>
 
@@ -45,8 +45,8 @@ public:
     int energy_type;
 
     const GEO::Mesh &geo_sf_mesh;
-    const GEO::MeshFacetsAABB& geo_sf_tree;
-    const GEO::MeshFacetsAABB& geo_b_tree;
+    const GEO::MeshFacetsAABBWithEps& geo_sf_tree;
+    const GEO::MeshFacetsAABBWithEps& geo_b_tree;
 
     int counter=0;
     int suc_counter=0;
@@ -55,7 +55,7 @@ public:
 
     LocalOperations(std::vector<TetVertex>& t_vs, std::vector<std::array<int, 4>>& ts, std::vector<std::array<int, 4>>& is_sf_fs,
                     std::vector<bool>& v_is_rm, std::vector<bool>& t_is_rm, std::vector<TetQuality>& tet_qs,
-                    int e_type, const GEO::Mesh &geo_mesh, const GEO::MeshFacetsAABB& geo_tree, const GEO::MeshFacetsAABB& b_t,
+                    int e_type, const GEO::Mesh &geo_mesh, const GEO::MeshFacetsAABBWithEps& geo_tree, const GEO::MeshFacetsAABBWithEps& b_t,
                     const Args &ar, State &st) :
         tet_vertices(t_vs), tets(ts), is_surface_fs(is_sf_fs), v_is_removed(v_is_rm), t_is_removed(t_is_rm),
         tet_qualities(tet_qs), energy_type(e_type),
