@@ -91,6 +91,8 @@ add_library(libTetWild STATIC
 		src/tetwild/Common.h
 		src/tetwild/DelaunayTetrahedralization.cpp
 		src/tetwild/DelaunayTetrahedralization.h
+		src/tetwild/DistanceQuery.cpp
+		src/tetwild/DistanceQuery.h
 		src/tetwild/EdgeCollapser.cpp
 		src/tetwild/EdgeCollapser.h
 		src/tetwild/EdgeRemover.cpp
